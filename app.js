@@ -1,3 +1,23 @@
+// ==========================================
+// CONFIGURAÇÃO DO FIREBASE (Chaves Oficiais)
+// ==========================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBh6NHOLoDW-eC6JAkd9oiR28kmPaWSb2s",
+  authDomain: "mini-mercearia.firebaseapp.com",
+  projectId: "mini-mercearia",
+  storageBucket: "mini-mercearia.firebasestorage.app",
+  messagingSenderId: "540835658385",
+  appId: "1:540835658385:web:fa6a7d186a3f2f72851d30",
+  measurementId: "G-98TB3D0BG1"
+};
+
+// Inicializar Firebase (Modo de Compatibilidade Script)
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ==========================================
+// DADOS E VARIÁVEIS DO SISTEMA
+// ==========================================
 let senhaDono = localStorage.getItem("senha_dono") || "1234";
 let senhaAtendente = localStorage.getItem("senha_atendente") || "5678"; // Código padrão inicial
 
@@ -16,11 +36,6 @@ let feedbacksClientes = JSON.parse(localStorage.getItem("feedbacks_clientes")) |
 
 let carrinhoBalcao = [];
 let carrinhoCliente = [];
-let pedidos = JSON.parse(localStorage.getItem("pedidos_mercearia")) || [];
-let dividas = JSON.parse(localStorage.getItem("dividas_mercearia")) || [];
-let despesas = JSON.parse(localStorage.getItem("despesas_mercearia")) || [];
-let historicoVendas = JSON.parse(localStorage.getItem("historico_mercearia")) || [];
-let mesesArquivados = JSON.parse(localStorage.getItem("meses_arquivados_mercearia")) || [];
 
 // Variáveis de Operação de Produtos Avulsos e Transações
 let produtosAvulsosEstoque = JSON.parse(localStorage.getItem("produtos_avulsos_estoque")) || {}; 
@@ -28,6 +43,51 @@ let transacoesCarteira = JSON.parse(localStorage.getItem("transacoes_carteira"))
 
 let categorySelecionadaCliente = "Todos";
 let categorySelecionadaBalcao = "Todos";
+
+// Listas Dinâmicas que vêm da Nuvem Online via Firebase em Tempo Real
+let pedidos = [];
+let dividas = [];
+let despesas = [];
+let historicoVendas = [];
+let mesesArquivados = [];
+
+// ==========================================
+// SINCRONIZAÇÃO EM TEMPO REAL (FIREBASE ONSNAPSHOT)
+// ==========================================
+db.collection("pedidos").onSnapshot((snapshot) => {
+    pedidos = [];
+    snapshot.forEach((doc) => { pedidos.push(doc.data()); });
+    atualizarBadges();
+    carregarPedidosPendentes();
+    if (clienteLogadoTel) carregarMinhasEncomendas();
+});
+
+db.collection("dividas").onSnapshot((snapshot) => {
+    dividas = [];
+    snapshot.forEach((doc) => { dividas.push(doc.data()); });
+    carregarTabelaDividas();
+    carregarFinancas();
+});
+
+db.collection("despesas").onSnapshot((snapshot) => {
+    despesas = [];
+    snapshot.forEach((doc) => { despesas.push(doc.data()); });
+    carregarTabelaDespesas();
+    carregarFinancas();
+});
+
+db.collection("historicoVendas").onSnapshot((snapshot) => {
+    historicoVendas = [];
+    snapshot.forEach((doc) => { historicoVendas.push(doc.data()); });
+    carregarFinancas();
+    carregarRelatorioProdutosVendidosHoje();
+});
+
+db.collection("mesesArquivados").onSnapshot((snapshot) => {
+    mesesArquivados = [];
+    snapshot.forEach((doc) => { mesesArquivados.push(doc.data()); });
+    carregarHistoricoArquivado();
+});
 
 // ==========================================
 // CONTROLADOR DE VISÃO ÚNICA (SISTEMA DE ACESSO)
@@ -121,11 +181,6 @@ function solicitarAcessoDonoAba(nomeAba) {
 function salvarDados() {
     localStorage.setItem("produtos_mercearia", JSON.stringify(produtos));
     localStorage.setItem("contas_clientes", JSON.stringify(contasClientes));
-    localStorage.setItem("pedidos_mercearia", JSON.stringify(pedidos));
-    localStorage.setItem("dividas_mercearia", JSON.stringify(dividas));
-    localStorage.setItem("despesas_mercearia", JSON.stringify(despesas));
-    localStorage.setItem("historico_mercearia", JSON.stringify(historicoVendas));
-    localStorage.setItem("meses_arquivados_mercearia", JSON.stringify(mesesArquivados));
     localStorage.setItem("sugestoes_produtos", JSON.stringify(sugestoesProdutos));
     localStorage.setItem("feedbacks_clientes", JSON.stringify(feedbacksClientes));
     localStorage.setItem("senha_dono", senhaDono);
@@ -226,7 +281,7 @@ function atualizarBarraProgressoFidelidade() {
     } else {
         const percentagem = (pts / 100) * 100;
         barFill.style.width = `${percentagem}%`;
-        txtProgresso.innerText = `Faltam ${100 - pts} pts para atingir a category Prata e ganhar 5% de desconto!`;
+        txtProgresso.innerText = `Faltam ${100 - pts} pts para atingir a categoria Prata e ganhar 5% de desconto!`;
     }
 }
 
@@ -376,6 +431,7 @@ function atualizarCarrinhoCliente() {
     totalEl.innerText = `${total.toFixed(2)} MT`;
 }
 
+// ENVIAR ENCOMENDA DIRETO PARA O FIREBASE ONLINE
 function enviarPedidoOnline() {
     if (!clienteLogadoTel) return alert("Faça login para submeter a encomenda.");
     if (carrinhoCliente.length === 0) return alert("Carrinho vazio!");
@@ -387,7 +443,7 @@ function enviarPedidoOnline() {
         total = total * 0.95;
     }
 
-    pedidos.push({
+    const novoPedido = {
         id: idPedido,
         tel: clienteLogadoTel,
         cliente: contasClientes[clienteLogadoTel].nome,
@@ -395,13 +451,16 @@ function enviarPedidoOnline() {
         total: total,
         status: "Pendente",
         dataVenda: new Date().toISOString().split("T")[0]
-    });
+    };
 
-    salvarDados();
-    alert(`Encomenda enviada com sucesso! Nº do Pedido: #${idPedido}`);
-    carrinhoCliente = [];
-    atualizarCarrinhoCliente();
-    carregarMinhasEncomendas();
+    db.collection("pedidos").doc(idPedido.toString()).set(novoPedido).then(() => {
+        alert(`Encomenda enviada com sucesso! Nº do Pedido: #${idPedido}`);
+        carrinhoCliente = [];
+        atualizarCarrinhoCliente();
+    }).catch((error) => {
+        console.error("Erro ao enviar pedido para o Firebase:", error);
+        alert("Erro de conexão ao submeter o pedido.");
+    });
 }
 
 function carregarMinhasEncomendas() {
@@ -645,10 +704,11 @@ function finalizarVendaBalcao() {
     });
 
     if (tel && contasClientes[tel]) {
-        contasClientes[tel].pontos = (contasClientes[tel].pontos || 0) + Math.floor(totalCobrado / 100);
+        contasClientes[tel].points = (contasClientes[tel].pontos || 0) + Math.floor(totalCobrado / 100);
     }
 
-    historicoVendas.push({
+    const idVenda = Date.now().toString();
+    const novaVenda = {
         data: new Date().toLocaleTimeString(),
         dataVenda: new Date().toISOString().split("T")[0],
         metodo: metodo,
@@ -656,20 +716,20 @@ function finalizarVendaBalcao() {
         lucro: lucro - (totalReal - totalCobrado),
         itens: carrinhoBalcao.map(i => `${i.nome} (${i.qtd} ${i.tipo})`).join(", "),
         detalhesItens: carrinhoBalcao.map(i => ({ nome: i.nome, qtd: i.qtd, tipo: i.tipo }))
-    });
+    };
 
-    salvarDados();
-    carregarFinancas();
-    alert("Venda concluída e stock abatido com sucesso!");
-    carrinhoBalcao = [];
-    document.getElementById("valor-pago").value = "";
-    document.getElementById("venda-cliente-tel").value = "";
-    atualizarCarrinhoBalcao();
-    carregarProdutosBalcao();
-    carregarRelatorioProdutosVendidosHoje();
+    db.collection("historicoVendas").doc(idVenda).set(novaVenda).then(() => {
+        alert("Venda concluída e sincronizada com a nuvem!");
+        carrinhoBalcao = [];
+        document.getElementById("valor-pago").value = "";
+        document.getElementById("venda-cliente-tel").value = "";
+        atualizarCarrinhoBalcao();
+        salvarDados();
+        carregarProdutosBalcao();
+    });
 }
 
-// 5. GESTÃO DE ENCOMENDAS ONLINE
+// 5. GESTÃO DE ENCOMENDAS ONLINE (FIREBASE COORDENADO)
 function carregarPedidosPendentes() {
     const container = document.getElementById("lista-pedidos-pendentes");
     if (!container) return;
@@ -701,18 +761,19 @@ function carregarPedidosPendentes() {
 }
 
 function marcarPedidoPronto(id) {
-    const ped = pedidos.find(p => p.id === id);
-    if (ped) {
-        ped.status = "Pronto para Levantamento";
-        ped.itens.forEach(item => {
-            const prod = produtos.find(pr => pr.id === item.id);
-            if (prod) prod.qtd = parseFloat((prod.qtd - item.qtd).toFixed(3));
-        });
-
-        salvarDados();
-        carregarPedidosPendentes();
-        alert("Pedido pronto! Stock abatido. Cliente notificado no site.");
-    }
+    db.collection("pedidos").doc(id.toString()).update({
+        status: "Pronto para Levantamento"
+    }).then(() => {
+        const ped = pedidos.find(p => p.id === id);
+        if (ped) {
+            ped.itens.forEach(item => {
+                const prod = produtos.find(pr => pr.id === item.id);
+                if (prod) prod.qtd = parseFloat((prod.qtd - item.qtd).toFixed(3));
+            });
+            salvarDados();
+        }
+        alert("Pedido pronto! Stock físico atualizado.");
+    });
 }
 
 function finalizarPagamentoPedido(id) {
@@ -720,49 +781,50 @@ function finalizarPagamentoPedido(id) {
     if (!ped) return;
 
     if (confirm(`Confirmar recebimento de ${ped.total.toFixed(2)} MT do pedido #${ped.id}?`)) {
-        ped.status = "Entregue e Pago";
+        db.collection("pedidos").doc(id.toString()).update({
+            status: "Entregue e Pago"
+        }).then(() => {
+            const lucroPedido = ped.itens.reduce((acc, i) => {
+                const subVenda = calcularPrecoFinalItem(i);
+                const subCusto = i.custo * i.qtd;
+                return acc + (subVenda - subCusto);
+            }, 0);
 
-        const lucroPedido = ped.itens.reduce((acc, i) => {
-            const subVenda = calcularPrecoFinalItem(i);
-            const subCusto = i.custo * i.qtd;
-            return acc + (subVenda - subCusto);
-        }, 0);
+            db.collection("historicoVendas").doc(id.toString()).set({
+                data: new Date().toLocaleTimeString(),
+                dataVenda: new Date().toISOString().split("T")[0],
+                metodo: "Encomenda Online",
+                total: ped.total,
+                lucro: lucroPedido,
+                itens: `Encomenda #${ped.id} - Cliente: ${ped.cliente}`,
+                detalhesItens: ped.itens.map(i => ({ nome: i.nome, qtd: i.qtd, tipo: i.tipo }))
+            });
 
-        historicoVendas.push({
-            data: new Date().toLocaleTimeString(),
-            dataVenda: new Date().toISOString().split("T")[0],
-            metodo: "Encomenda Online",
-            total: ped.total,
-            lucro: lucroPedido,
-            itens: `Encomenda #${ped.id} - Cliente: ${ped.cliente}`,
-            detalhesItens: ped.itens.map(i => ({ nome: i.nome, qtd: i.qtd, tipo: i.tipo }))
+            if (contasClientes[ped.tel]) {
+                contasClientes[ped.tel].pontos = (contasClientes[ped.tel].pontos || 0) + Math.floor(ped.total / 100);
+            }
+
+            salvarDados();
+            alert("Pagamento confirmado online!");
         });
-
-        if (contasClientes[ped.tel]) {
-            contasClientes[ped.tel].pontos = (contasClientes[ped.tel].pontos || 0) + Math.floor(ped.total / 100);
-        }
-
-        salvarDados();
-        carregarPedidosPendentes();
-        carregarFinancas();
-        alert("Pagamento confirmado e adicionado à faturação!");
-        carregarRelatorioProdutosVendidosHoje();
     }
 }
 
 // 6. DÍVIDAS, DESPESAS E FECHO MENSAL
 function registarDivida(e) {
     e.preventDefault();
-    const nome = document.getElementById("div-nome").value;
-    const tel = document.getElementById("div-tel").value;
-    const valor = parseFloat(document.getElementById("div-valor").value);
-    const data = document.getElementById("div-data").value;
+    const id = Date.now().toString();
+    const d = {
+        id: id,
+        nome: document.getElementById("div-nome").value,
+        tel: document.getElementById("div-tel").value,
+        valor: parseFloat(document.getElementById("div-valor").value),
+        data: document.getElementById("div-data").value
+    };
 
-    dividas.push({ id: Date.now(), nome, tel, valor, data });
-    salvarDados();
-    e.target.reset();
-    carregarTabelaDividas();
-    carregarFinancas();
+    db.collection("dividas").doc(id).set(d).then(() => {
+        e.target.reset();
+    });
 }
 
 function carregarTabelaDividas() {
@@ -787,7 +849,7 @@ function carregarTabelaDividas() {
                 <td style="padding:10px;">${vencida ? '<span style="color:red; font-weight:bold;">⚠️ VENCIDA</span>' : 'Pendente'}</td>
                 <td style="padding:10px;">
                     <button onclick="enviarSmsLembrete('${d.tel}', '${d.nome}', ${d.valor}, '${d.data}')" class="btn-secundario" style="padding:4px 8px; font-size:0.8rem;"><i class="fa-brands fa-whatsapp"></i> Cobrar</button>
-                    <button onclick="liquidarDivida(${d.id})" class="btn-cadastrar" style="background:#16a34a; padding:4px 8px; font-size:0.8rem;">Pagar</button>
+                    <button onclick="liquidarDivida('${d.id}', ${d.valor})" class="btn-cadastrar" style="background:#16a34a; padding:4px 8px; font-size:0.8rem;">Pagar</button>
                 </td>
             </tr>
         `;
@@ -801,40 +863,35 @@ function enviarSmsLembrete(tel, nome, valor, data) {
     window.open(`https://wa.me/258${tel}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
-function liquidarDivida(id) {
-    const div = dividas.find(d => d.id === id);
-    if (!div) return;
-
-    if (confirm(`Liquidou o valor de ${div.valor.toFixed(2)} MT?`)) {
-        historicoVendas.push({
-            data: new Date().toLocaleTimeString(),
-            dataVenda: new Date().toISOString().split("T")[0],
-            metodo: "Recebimento de Dívida",
-            total: div.valor,
-            lucro: div.valor,
-            itens: `Dívida Liquidada - ${div.nome}`,
-            detalhesItens: []
+function liquidarDivida(id, valor) {
+    if (confirm(`Liquidou o valor de ${valor.toFixed(2)} MT?`)) {
+        db.collection("dividas").doc(id).delete().then(() => {
+            db.collection("historicoVendas").doc(id).set({
+                data: new Date().toLocaleTimeString(),
+                dataVenda: new Date().toISOString().split("T")[0],
+                metodo: "Numerário",
+                total: valor,
+                lucro: valor,
+                itens: "Dívida Fiada Paga",
+                detalhesItens: []
+            });
         });
-
-        dividas = dividas.filter(d => d.id !== id);
-        salvarDados();
-        carregarTabelaDividas();
-        carregarFinancas();
-        carregarRelatorioProdutosVendidosHoje();
     }
 }
 
 function registarDespesa(e) {
     if(e) e.preventDefault();
-    const desc = document.getElementById("desp-desc").value;
-    const valor = parseFloat(document.getElementById("desp-valor").value);
-    const data = document.getElementById("desp-data").value;
+    const id = Date.now().toString();
+    const d = {
+        id: id,
+        desc: document.getElementById("desp-desc").value,
+        valor: parseFloat(document.getElementById("desp-valor").value),
+        data: document.getElementById("desp-data").value
+    };
 
-    despesas.push({ id: Date.now(), desc, valor, data });
-    salvarDados();
-    if(e) e.target.reset();
-    carregarTabelaDespesas();
-    carregarFinancas();
+    db.collection("despesas").doc(id).set(d).then(() => {
+        if(e) e.target.reset();
+    });
 }
 
 function carregarTabelaDespesas() {
@@ -848,7 +905,7 @@ function carregarTabelaDespesas() {
                 <td style="padding:10px;">${d.data}</td>
                 <td style="padding:10px;"><strong>${d.desc}</strong></td>
                 <td style="padding:10px; color:#ef4444; font-weight:bold;">-${d.valor.toFixed(2)} MT</td>
-                <td style="padding:10px;"><button onclick="removerDespesa(${d.id})" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Apagar</button></td>
+                <td style="padding:10px;"><button onclick="removerDespesa('${d.id}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Apagar</button></td>
             </tr>
         `;
     });
@@ -856,10 +913,7 @@ function carregarTabelaDespesas() {
 
 function removerDespesa(id) {
     if (confirm("Apagar despesa?")) {
-        despesas = despesas.filter(d => d.id !== id);
-        salvarDados();
-        carregarTabelaDespesas();
-        carregarFinancas();
+        db.collection("despesas").doc(id).delete();
     }
 }
 
@@ -874,8 +928,9 @@ function arquivarEReiniciarMes() {
     const lucroBruto = historicoVendas.reduce((acc, v) => acc + v.lucro, 0);
     const totalDespesas = despesas.reduce((acc, d) => acc + d.valor, 0);
 
-    mesesArquivados.push({
-        id: Date.now(),
+    const archiveId = Date.now().toString();
+    const novoArquivo = {
+        id: archiveId,
         mes: nomeMes,
         dataFecho: new Date().toLocaleDateString(),
         faturacao: fat,
@@ -884,17 +939,16 @@ function arquivarEReiniciarMes() {
         lucroLiquidoReal: lucroBruto - totalDespesas,
         detalhesDespesas: [...despesas],
         totalVendasQtd: historicoVendas.length
-    });
+    };
 
-    historicoVendas = [];
-    despesas = [];
-    transacoesCarteira = []; 
-    salvarDados();
-    carregarFinancas();
-    carregarTabelaDespesas();
-    carregarHistoricoArquivado();
-    carregarTabelaCarteiras();
-    alert("Mês arquivado e contabilidade zerada.");
+    db.collection("mesesArquivados").doc(archiveId).set(novoArquivo).then(() => {
+        // Apagar os documentos colecionados localmente na nuvem para limpar o mês
+        historicoVendas.forEach(v => db.collection("historicoVendas").doc(v.id || "").delete());
+        despesas.forEach(d => db.collection("despesas").doc(d.id || "").delete());
+        transacoesCarteira = []; 
+        salvarDados();
+        alert("Mês arquivado e contabilidade zerada com sucesso!");
+    });
 }
 
 function carregarHistoricoArquivado() {
@@ -919,8 +973,8 @@ function carregarHistoricoArquivado() {
                     </p>
                 </div>
                 <div>
-                    <button onclick="verDetalhesArquivo(${m.id})" class="btn-secundario" style="padding:5px 10px; font-size:0.85rem;">🔍 Ver Detalhes</button>
-                    <button onclick="apagarRelatorioArquivado(${m.id})" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; font-size:0.85rem; cursor:pointer;">🗑️ Apagar</button>
+                    <button onclick="verDetalhesArquivo('${m.id}')" class="btn-secundario" style="padding:5px 10px; font-size:0.85rem;">🔍 Ver Detalhes</button>
+                    <button onclick="apagarRelatorioArquivado('${m.id}')" style="background:#ef4444; color:white; border:none; padding:6px 10px; border-radius:4px; font-size:0.85rem; cursor:pointer;">🗑️ Apagar</button>
                 </div>
             </div>
         `;
@@ -936,9 +990,7 @@ function verDetalhesArquivo(id) {
 
 function apagarRelatorioArquivado(id) {
     if (confirm("Apagar relatório permanentemente?")) {
-        mesesArquivados = mesesArquivados.filter(m => m.id !== id);
-        salvarDados();
-        carregarHistoricoArquivado();
+        db.collection("mesesArquivados").doc(id).delete();
     }
 }
 
@@ -1081,18 +1133,17 @@ function declararDanificado(id) {
         p.qtd = parseFloat((p.qtd - qtdDanificada).toFixed(3));
         const custoPrejuizo = p.custo * qtdDanificada;
 
-        despesas.push({
-            id: Date.now(),
+        const damageId = Date.now().toString();
+        db.collection("despesas").doc(damageId).set({
+            id: damageId,
             desc: `Prejuízo: Danificação de ${p.nome} (${qtdDanificada} ${p.tipo})`,
             valor: custoPrejuizo,
             data: new Date().toISOString().split("T")[0]
+        }).then(() => {
+            salvarDados();
+            carregarTabelaStock();
+            alert(`Perda registada online! ${custoPrejuizo.toFixed(2)} MT adicionados às despesas da loja.`);
         });
-
-        salvarDados();
-        carregarTabelaStock();
-        carregarTabelaDespesas();
-        carregarFinancas();
-        alert(`Perda registada! ${custoPrejuizo.toFixed(2)} MT adicionados às despesas da loja.`);
     }
 }
 
@@ -1188,7 +1239,7 @@ function confirmarFracionamentoOleo() {
     }
 
     const p = produtos.find(item => item.id === prodId);
-    if (!p || p.qtd < 1) return alert("Não há unidades suficientes deste artigo em stock!");
+    if (!p || p.qtd < 1) return alert("Não hay unidades suficientes deste artigo em stock!");
 
     if (confirm(`Deseja abrir 1 unidade de [${p.nome}] e transferir ${capacity} para o balcão avulso de retalho?`)) {
         p.qtd = parseFloat((p.qtd - 1).toFixed(3)); 
@@ -1251,7 +1302,8 @@ function venderOleoAvulso() {
         let custoProporcional = (artigoAvulso.custoOriginalPai / artigoAvulso.capacidadeUnidadePai) * quantidadeGasta;
         let lucroAvulso = valorMT - custoProporcional;
 
-        historicoVendas.push({
+        const saleId = Date.now().toString();
+        db.collection("historicoVendas").doc(saleId).set({
             data: new Date().toLocaleTimeString(),
             dataVenda: new Date().toISOString().split("T")[0],
             metodo: "Numerário",
@@ -1259,13 +1311,11 @@ function venderOleoAvulso() {
             lucro: lucroAvulso,
             itens: `${artigoAvulso.nome} (${quantidadeGasta.toFixed(2)} ${artigoAvulso.unidadeMedida})`,
             detalhesItens: [{ nome: artigoAvulso.nome, qtd: quantidadeGasta, tipo: artigoAvulso.unidadeMedida }]
+        }).then(() => {
+            salvarDados();
+            carregarAvulsoStatusGeral();
+            alert("Artigo avulso fracionado e vendido com sucesso!");
         });
-
-        salvarDados();
-        carregarAvulsoStatusGeral();
-        carregarFinancas();
-        alert("Artigo avulso fracionado, vendido e abatido com sucesso!");
-        carregarRelatorioProdutosVendidosHoje();
     }
 }
 
@@ -1331,74 +1381,83 @@ function registarTransacaoCarteira(e) {
     const valor = parseFloat(document.getElementById("cart-valor").value);
     const taxaAgente = parseFloat(document.getElementById("cart-taxa").value) || 0;
 
-    transacoesCarteira.push({
-        id: Date.now(),
+    const transId = Date.now().toString();
+    db.collection("transacoesCarteira").doc(transId).set({
+        id: transId,
         data: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
         tipo,
         operacao,
         valor,
         taxaAgente
-    });
-
-    if (taxaAgente > 0) {
-        historicoVendas.push({
-            data: new Date().toLocaleTimeString(),
-            dataVenda: new Date().toISOString().split("T")[0],
-            metodo: tipo,
-            total: taxaAgente,
-            lucro: taxaAgente,
-            itens: `Comissão de ${operacao} (${tipo})`,
-            detalhesItens: []
+    }).then(() => {
+        if (taxaAgente > 0) {
+            db.collection("historicoVendas").doc(transId).set({
+                data: new Date().toLocaleTimeString(),
+                dataVenda: new Date().toISOString().split("T")[0],
+                metodo: tipo,
+                total: taxaAgente,
+                lucro: taxaAgente,
+                itens: `Comissão de ${operacao} (${tipo})`,
+                detalhesItens: []
+            });
+        }
+        transacoesCarteira.push({
+            id: parseFloat(transId),
+            data: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
+            tipo, operacao, valor, taxaAgente
         });
-    }
-
-    salvarDados();
-    e.target.reset();
-    carregarTabelaCarteiras();
-    carregarFinancas();
-    alert("Operação registada!");
+        salvarDados();
+        e.target.reset();
+        carregarTabelaCarteiras();
+        alert("Operação registada com sucesso!");
+    });
 }
 
 function carregarTabelaCarteiras() {
     const tbody = document.getElementById("tabela-carteiras-body");
     if (!tbody) return;
-    tbody.innerHTML = "";
+    
+    db.collection("transacoesCarteira").get().then((querySnapshot) => {
+        tbody.innerHTML = "";
+        transacoesCarteira = [];
+        let totalDepositos = 0;
+        let totalLevantamentos = 0;
+        let totalComissoes = 0;
 
-    let totalDepositos = 0;
-    let totalLevantamentos = 0;
-    let totalComissoes = 0;
+        querySnapshot.forEach((doc) => {
+            let t = doc.data();
+            transacoesCarteira.push(t);
+            if (t.operacao === "Depósito") totalDepositos += t.valor;
+            if (t.operacao === "Levantamento") totalLevantamentos += t.valor;
+            totalComissoes += t.taxaAgente;
 
-    transacoesCarteira.forEach(t => {
-        if (t.operacao === "Depósito") totalDepositos += t.valor;
-        if (t.operacao === "Levantamento") totalLevantamentos += t.valor;
-        totalComissoes += t.taxaAgente;
+            tbody.innerHTML += `
+                <tr>
+                    <td style="padding:10px;">${t.data}</td>
+                    <td style="padding:10px;"><strong>${t.tipo}</strong></td>
+                    <td style="padding:10px; color:${t.operacao === 'Depósito' ? '#16a34a' : '#2563eb'}; font-weight:bold;">${t.operacao}</td>
+                    <td style="padding:10px;">${t.valor.toFixed(2)} MT</td>
+                    <td style="padding:10px; color:#16a34a; font-weight:bold;">+${t.taxaAgente.toFixed(2)} MT</td>
+                    <td style="padding:10px;"><button onclick="removerTransacaoCarteira('${t.id}')" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Apagar</button></td>
+                </tr>
+            `;
+        });
 
-        tbody.innerHTML += `
-            <tr>
-                <td style="padding:10px;">${t.data}</td>
-                <td style="padding:10px;"><strong>${t.tipo}</strong></td>
-                <td style="padding:10px; color:${t.operacao === 'Depósito' ? '#16a34a' : '#2563eb'}; font-weight:bold;">${t.operacao}</td>
-                <td style="padding:10px;">${t.valor.toFixed(2)} MT</td>
-                <td style="padding:10px; color:#16a34a; font-weight:bold;">+${t.taxaAgente.toFixed(2)} MT</td>
-                <td style="padding:10px;"><button onclick="removerTransacaoCarteira(${t.id})" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Apagar</button></td>
-            </tr>
-        `;
+        const d1 = document.getElementById("cart-resumo-depositos");
+        const d2 = document.getElementById("cart-resumo-levantamentos");
+        const d3 = document.getElementById("cart-resumo-comissoes");
+        if(d1) d1.innerText = `${totalDepositos.toFixed(2)} MT`;
+        if(d2) d2.innerText = `${totalLevantamentos.toFixed(2)} MT`;
+        if(d3) d3.innerText = `${totalComissoes.toFixed(2)} MT`;
     });
-
-    const d1 = document.getElementById("cart-resumo-depositos");
-    const d2 = document.getElementById("cart-resumo-levantamentos");
-    const d3 = document.getElementById("cart-resumo-comissoes");
-    if(d1) d1.innerText = `${totalDepositos.toFixed(2)} MT`;
-    if(d2) d2.innerText = `${totalLevantamentos.toFixed(2)} MT`;
-    if(d3) d3.innerText = `${totalComissoes.toFixed(2)} MT`;
 }
 
 function removerTransacaoCarteira(id) {
     if (confirm("Deseja apagar este registo?")) {
-        transacoesCarteira = transacoesCarteira.filter(t => t.id !== id);
-        salvarDados();
-        carregarTabelaCarteiras();
-        carregarFinancas();
+        db.collection("transacoesCarteira").doc(id).delete().then(() => {
+            db.collection("historicoVendas").doc(id).delete();
+            carregarTabelaCarteiras();
+        });
     }
 }
 
@@ -1437,6 +1496,6 @@ window.addEventListener('DOMContentLoaded', () => {
     } else {
         carregarLojaCliente();
     }
-    atualizarBadges();
     verificarPerfilAcesso();
+    carregarTabelaCarteiras();
 });
