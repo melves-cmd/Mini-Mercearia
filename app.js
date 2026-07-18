@@ -3,9 +3,9 @@ let senhaAtendente = localStorage.getItem("senha_atendente") || "5678"; // Códi
 
 // Dados Persistentes com LocalStorage
 let produtos = JSON.parse(localStorage.getItem("produtos_mercearia")) || [
-    { id: 1, nome: "Arroz TopFlour 5kg", tipo: "UNI", categoria: "Básicos", custo: 320, preco: 400, qtd: 15, imagem: "", qtdAtacado: 5, descAtacado: 10 },
-    { id: 2, nome: "Peixe Xaputa (KG)", tipo: "KG", categoria: "Frescos", custo: 180, preco: 250, qtd: 20, imagem: "", qtdAtacado: 0, descAtacado: 0 },
-    { id: 3, nome: "Açúcar Castanho (KG)", tipo: "KG", categoria: "Básicos", custo: 50, preco: 75, qtd: 50, imagem: "", qtdAtacado: 10, descAtacado: 5 }
+    { id: 1, nome: "Arroz TopFlour 5kg", tipo: "UNI", category: "Básicos", custo: 320, preco: 400, qtd: 15, imagem: "", qtdAtacado: 5, descAtacado: 10 },
+    { id: 2, nome: "Peixe Xaputa (KG)", tipo: "KG", category: "Frescos", custo: 180, preco: 250, qtd: 20, imagem: "", qtdAtacado: 0, descAtacado: 0 },
+    { id: 3, nome: "Açúcar Castanho (KG)", tipo: "KG", category: "Básicos", custo: 50, preco: 75, qtd: 50, imagem: "", qtdAtacado: 10, descAtacado: 5 }
 ];
 
 let contasClientes = JSON.parse(localStorage.getItem("contas_clientes")) || {};
@@ -26,8 +26,8 @@ let mesesArquivados = JSON.parse(localStorage.getItem("meses_arquivados_merceari
 let produtosAvulsosEstoque = JSON.parse(localStorage.getItem("produtos_avulsos_estoque")) || {}; 
 let transacoesCarteira = JSON.parse(localStorage.getItem("transacoes_carteira")) || [];
 
-let categoriaSelecionadaCliente = "Todos";
-let categoriaSelecionadaBalcao = "Todos";
+let categorySelecionadaCliente = "Todos";
+let categorySelecionadaBalcao = "Todos";
 
 // ==========================================
 // CONTROLADOR DE VISÃO ÚNICA (SISTEMA DE ACESSO)
@@ -226,7 +226,7 @@ function atualizarBarraProgressoFidelidade() {
     } else {
         const percentagem = (pts / 100) * 100;
         barFill.style.width = `${percentagem}%`;
-        txtProgresso.innerText = `Faltam ${100 - pts} pts para atingir a categoria Prata e ganhar 5% de desconto!`;
+        txtProgresso.innerText = `Faltam ${100 - pts} pts para atingir a category Prata e ganhar 5% de desconto!`;
     }
 }
 
@@ -237,8 +237,8 @@ function carregarLojaCliente(lista = produtos) {
     grid.innerHTML = "";
 
     let produtosFiltrados = lista;
-    if (categoriaSelecionadaCliente !== "Todos") {
-        produtosFiltrados = lista.filter(p => p.categoria === categoriaSelecionadaCliente);
+    if (categorySelecionadaCliente !== "Todos") {
+        produtosFiltrados = lista.filter(p => p.category === categorySelecionadaCliente);
     }
 
     if (produtosFiltrados.length === 0) {
@@ -275,28 +275,29 @@ function carregarLojaCliente(lista = produtos) {
 }
 
 function renderizarTagsCategoria(origem) {
-    const box = document.getElementById(origem === "cliente" ? "categoria-tags-cliente" : "categoria-tags-balcao");
+    const box = document.getElementById(origem === "cliente" ? "category-tags-cliente" : "category-tags-balcao");
     if (!box) return;
 
     const cats = ["Todos", "Básicos", "Frescos", "Bebidas", "Snacks", "Limpeza"];
     box.innerHTML = "";
     
     cats.forEach(c => {
-        const sel = (origem === "cliente" ? categoriaSelecionadaCliente : categoriaSelecionadaBalcao) === c;
-        box.innerHTML += `<span class="tag-categoria ${sel ? 'active' : ''}" onclick="selecionarCategoria('${origem}', '${c}')">${c}</span>`;
+        const sel = (origem === "cliente" ? categorySelecionadaCliente : categorySelecionadaBalcao) === c;
+        box.innerHTML += `<span class="tag-category ${sel ? 'active' : ''}" onclick="selecionarCategoria('${origem}', '${c}')">${c}</span>`;
     });
 }
 
 function selecionarCategoria(origem, cat) {
     if (origem === "cliente") {
-        categoriaSelecionadaCliente = cat;
+        categorySelecionadaCliente = cat;
         carregarLojaCliente();
     } else {
-        categoriaSelecionadaBalcao = cat;
+        categorySelecionadaBalcao = cat;
         carregarProdutosBalcao();
     }
 }
 
+// 3. INTERATIVIDADE E ENGAJAMENTO
 function adicionarAoCarrinhoCliente(id) {
     if (!clienteLogadoTel) return alert("Por favor, faça Login na sua conta primeiro para poder encomendar!");
 
@@ -433,7 +434,6 @@ function carregarMinhasEncomendas() {
     });
 }
 
-// 3. INTERATIVIDADE E ENGAJAMENTO
 function enviarSugestaoProduto() {
     const input = document.getElementById("cli-sugestao-prod");
     const valor = input.value.trim();
@@ -514,8 +514,8 @@ function carregarProdutosBalcao(lista = produtos) {
     grid.innerHTML = "";
 
     let produtosFiltrados = lista;
-    if (categoriaSelecionadaBalcao !== "Todos") {
-        produtosFiltrados = lista.filter(p => p.categoria === categoriaSelecionadaBalcao);
+    if (categorySelecionadaBalcao !== "Todos") {
+        produtosFiltrados = lista.filter(p => p.category === categorySelecionadaBalcao);
     }
 
     produtosFiltrados.forEach(p => {
@@ -797,7 +797,7 @@ function carregarTabelaDividas() {
 }
 
 function enviarSmsLembrete(tel, nome, valor, data) {
-    const msg = `Olá ${nome}, lembramos o valor de ${valor.toFixed(2)} MT in aberto na nossa Mercearia que vence a ${data}. Obrigado!`;
+    const msg = `Olá ${nome}, lembramos o valor de ${valor.toFixed(2)} MT em aberto na nossa Mercearia que vence a ${data}. Obrigado!`;
     window.open(`https://wa.me/258${tel}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
@@ -974,7 +974,7 @@ function cadastrarProduto(e) {
     e.preventDefault();
     const nome = document.getElementById("p-nome").value;
     const tipo = document.getElementById("p-tipo").value;
-    const categoria = document.getElementById("p-categoria").value;
+    const category = document.getElementById("p-category").value;
     const custo = parseFloat(document.getElementById("p-custo").value);
     const preco = parseFloat(document.getElementById("p-venda").value);
     const qtd = parseFloat(document.getElementById("p-qtd").value);
@@ -986,7 +986,7 @@ function cadastrarProduto(e) {
         id: Date.now(), 
         nome, 
         tipo, 
-        categoria, 
+        category, 
         custo, 
         preco, 
         qtd, 
@@ -1020,7 +1020,7 @@ function carregarTabelaStock() {
             <tr class="card-fade">
                 <td style="padding:10px;">${imgPreview}</td>
                 <td style="padding:10px;"><strong>${p.nome}</strong></td>
-                <td style="padding:10px;"><span class="tag-kg" style="position:static;">${p.categoria}</span></td>
+                <td style="padding:10px;"><span class="tag-kg" style="position:static;">${p.category}</span></td>
                 <td style="padding:10px;">${p.custo.toFixed(2)} MT</td>
                 <td style="padding:10px;">
                     <span id="p-preco-view-${p.id}">${p.preco.toFixed(2)} MT</span>
@@ -1028,7 +1028,7 @@ function carregarTabelaStock() {
                 </td>
                 <td style="padding:10px; color:#d97706;">${descInfo}</td>
                 <td style="padding:10px;">
-                    <strong id="p-qtd-view-${p.id}">${p.qtd} ${p.tipo}</strong>
+                    <span id="p-qtd-view-${p.id}"><strong>${p.qtd} ${p.tipo}</strong></span>
                     <button onclick="ajustarStock(${p.id})" style="background:#f59e0b; color:white; border:none; padding:2px 6px; border-radius:4px; margin-left:5px; cursor:pointer; font-size:0.75rem;">Ajustar</button>
                 </td>
                 <td style="padding:10px; display:flex; gap:5px;">
@@ -1096,7 +1096,6 @@ function declararDanificado(id) {
     }
 }
 
-// REMOVER
 function removerProduto(id) {
     if (confirm("Apagar produto do inventário?")) {
         produtos = produtos.filter(p => p.id !== id);
@@ -1413,6 +1412,24 @@ function filtrarProdutosCliente() {
     carregarLojaCliente(produtos.filter(p => p.nome.toLowerCase().includes(termo)));
 }
 
+// LÓGICA DO PÍXEL INVISÍVEL (3 CLIQUES)
+let cliquesSecretos = 0;
+let tempoUltimoClique = 0;
+
+function contarCliquesSecretos() {
+    const agora = Date.now();
+    if (agora - tempoUltimoClique > 1000) {
+        cliquesSecretos = 0;
+    }
+    cliquesSecretos++;
+    tempoUltimoClique = agora;
+    
+    if (cliquesSecretos === 3) {
+        cliquesSecretos = 0;
+        iniciarLoginModoAdministrativo();
+    }
+}
+
 // Inicialização Unificada
 window.addEventListener('DOMContentLoaded', () => {
     if (clienteLogadoTel && contasClientes[clienteLogadoTel]) {
@@ -1423,24 +1440,3 @@ window.addEventListener('DOMContentLoaded', () => {
     atualizarBadges();
     verificarPerfilAcesso();
 });
-// LÓGICA DO PÍXEL INVISÍVEL (3 CLIQUES)
-let cliquesSecretos = 0;
-let tempoUltimoClique = 0;
-
-function contarCliquesSecretos() {
-    const agora = Date.now();
-    
-    // Se o tempo entre os cliques for maior que 1 segundo, reinicia a contagem
-    if (agora - tempoUltimoClique > 1000) {
-        cliquesSecretos = 0;
-    }
-    
-    cliquesSecretos++;
-    tempoUltimoClique = agora;
-    
-    // Quando atingir os 3 cliques rápidos, abre o login
-    if (cliquesSecretos === 3) {
-        cliquesSecretos = 0; // Reinicia o contador
-        iniciarLoginModoAdministrativo();
-    }
-}
