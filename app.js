@@ -1423,3 +1423,24 @@ window.addEventListener('DOMContentLoaded', () => {
     atualizarBadges();
     verificarPerfilAcesso();
 });
+// LÓGICA DO PÍXEL INVISÍVEL (3 CLIQUES)
+let cliquesSecretos = 0;
+let tempoUltimoClique = 0;
+
+function contarCliquesSecretos() {
+    const agora = Date.now();
+    
+    // Se o tempo entre os cliques for maior que 1 segundo, reinicia a contagem
+    if (agora - tempoUltimoClique > 1000) {
+        cliquesSecretos = 0;
+    }
+    
+    cliquesSecretos++;
+    tempoUltimoClique = agora;
+    
+    // Quando atingir os 3 cliques rápidos, abre o login
+    if (cliquesSecretos === 3) {
+        cliquesSecretos = 0; // Reinicia o contador
+        iniciarLoginModoAdministrativo();
+    }
+}
