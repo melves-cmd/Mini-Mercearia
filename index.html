@@ -9,13 +9,14 @@
 </head>
 <body>
 
-    <!-- CABEÇALHO E NAVEGAÇÃO UNIFICADA COM BOTÕES DINÂMICOS -->
+    <!-- CABEÇALHO TOTALMENTE LIMPO PARA O CLIENTE (SEM ENGRENAGEM) -->
     <header>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <img src="logo_mini_mercearia.png" alt="Logo Mercearia" style="height: 50px; width: auto; border-radius: 8px;">
+        <div class="logo-area">
+            <div class="logo-wrapper">
+                <img src="logo_mini_mercearia.png" alt="Logo Mercearia" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="logo-fallback" style="display: none;"><i class="fa-solid fa-shop"></i></div>
+            </div>
             <h1>Mini Mercearia</h1>
-            <!-- Botão discreto de login administrativo para o Dono/Atendente -->
-            <button onclick="iniciarLoginModoAdministrativo()" style="background:transparent; border:none; color:#64748b; cursor:pointer; margin-left:10px;"><i class="fa-solid fa-gear fa-lg"></i></button>
         </div>
         <nav class="nav-menu">
             <button id="nav-btn-cliente" class="nav-btn active" onclick="mudarAbaDirecto('cliente')"><i class="fa-solid fa-bag-shopping"></i> Loja Online</button>
@@ -38,7 +39,6 @@
                         <h3><i class="fa-solid fa-user-lock"></i> Login ou Criar Conta</h3>
                         <p style="font-size:0.85rem; color:#64748b;">Aceda para encomendar, sugerir produtos e ganhar pontos de fidelidade!</p>
                     </div>
-                    <img src="logo_mini_mercearia.png" alt="Logo" style="height: 60px; border-radius: 50%;">
                 </div>
                 <div class="grid-auth">
                     <div class="auth-col">
@@ -347,15 +347,8 @@
 
     </main>
 
-    <script src="app.js"></script>
-</body>
-</html>
-<!-- ... resto do código do index.html acima ... -->
-        </div>
-    </main>
-
-    <!-- O PÍXEL INVISÍVEL (Botão fantasma no canto inferior direito) -->
-    <div id="pixel-secreto" onclick="contarCliquesSecretos()" style="position: fixed; bottom: 0; right: 0; width: 15px; height: 15px; background: transparent; z-index: 9999; cursor: default;"></div>
+    <!-- O PÍXEL INVISÍVEL AJUSTADO (Com folga para não selecionar texto no PC) -->
+    <div id="pixel-secreto" onclick="contarCliquesSecretos()" style="position: fixed; bottom: 15px; right: 15px; width: 35px; height: 35px; background: transparent; z-index: 9999; cursor: default; user-select: none; -webkit-user-select: none;"></div>
 
     <script src="app.js"></script>
 </body>
