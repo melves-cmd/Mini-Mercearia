@@ -1,0 +1,374 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+body {
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: white;
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+.nav-menu {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.nav-btn {
+    background: #1e293b;
+    color: #94a3b8;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover, .nav-btn.active {
+    background: #2563eb;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.badge {
+    background: #ef4444;
+    color: white;
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 9999px;
+    margin-left: 5px;
+}
+
+.container {
+    padding: 24px;
+    max-width: 1240px;
+    margin: 0 auto;
+}
+
+.aba-conteudo {
+    display: none;
+}
+
+.aba-conteudo.active {
+    display: block;
+}
+
+.card-fade {
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card-painel {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.grid-auth {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.auth-col {
+    flex: 1;
+    min-width: 250px;
+}
+
+.auth-divider {
+    width: 1px;
+    background: #cbd5e1;
+}
+
+@media (max-width: 768px) {
+    .auth-divider { display: none; }
+}
+
+.input-modern {
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.input-modern:focus {
+    border-color: #2563eb;
+}
+
+.input-search {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 2px solid #cbd5e1;
+    font-size: 1rem;
+    outline: none;
+}
+
+.input-search:focus {
+    border-color: #2563eb;
+}
+
+.filtros-container {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 15px;
+}
+
+.categoria-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+
+.tag-categoria {
+    background: #f1f5f9;
+    color: #475569;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tag-categoria:hover, .tag-categoria.active {
+    background: #dbeafe;
+    color: #2563eb;
+    border-color: #3b82f6;
+}
+
+.grid-produtos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.card-produto {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.card-produto:hover {
+    transform: translateY(-4px);
+    border-color: #3b82f6;
+    box-shadow: 0 10px 15px -3px rgba(59,130,246,0.1);
+}
+
+.card-img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.card-img-placeholder {
+    width: 100%;
+    height: 120px;
+    background: #f1f5f9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #94a3b8;
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.card-produto.esgotado {
+    opacity: 0.6;
+    background: #f8fafc;
+    cursor: not-allowed;
+}
+
+.tag-kg {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #1e293b;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: bold;
+    z-index: 2;
+}
+
+.tag-esgotado {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-weight: bold;
+    z-index: 2;
+}
+
+.tag-atacado {
+    display: inline-block;
+    position: relative;
+    background: #fef3c7;
+    color: #d97706;
+    font-size: 0.65rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    margin: 6px auto;
+    width: fit-content;
+    text-align: center;
+}
+
+.card-produto .nome {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+.card-produto .preco {
+    color: #16a34a;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+}
+
+.badge-pontos {
+    background: #22c55e;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+.fidelidade-progresso {
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.progress-bar-bg {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #22c55e);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.col-fin {
+    flex: 1;
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.btn-cadastrar, .btn-cadastrar-full {
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-cadastrar-full { 
+    width: 100%; 
+}
+
+.btn-cadastrar:hover, .btn-cadastrar-full:hover { 
+    background: #15803d; 
+}
+
+.btn-secundario, .btn-secundario-full {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-secundario-full { 
+    width: 100%; 
+}
+
+.btn-secundario:hover, .btn-secundario-full:hover { 
+    background: #1d4ed8; 
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table th {
+    font-weight: 600;
+    color: #475569;
+    padding: 10px;
+}
+
+table td {
+    padding: 12px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.divida-vencida {
+    background-color: #fef2f2;
+}

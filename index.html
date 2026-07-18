@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão - Mini Mercearia</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- CABEÇALHO E NAVEGAÇÃO UNIFICADA COM BOTÕES DINÂMICOS -->
+    <header>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="logo_mini_mercearia.png" alt="Logo Mercearia" style="height: 50px; width: auto; border-radius: 8px;">
+            <h1>Mini Mercearia</h1>
+            <!-- Botão discreto de login administrativo para o Dono/Atendente -->
+            <button onclick="iniciarLoginModoAdministrativo()" style="background:transparent; border:none; color:#64748b; cursor:pointer; margin-left:10px;"><i class="fa-solid fa-gear fa-lg"></i></button>
+        </div>
+        <nav class="nav-menu">
+            <button id="nav-btn-cliente" class="nav-btn active" onclick="mudarAbaDirecto('cliente')"><i class="fa-solid fa-bag-shopping"></i> Loja Online</button>
+            <button id="nav-btn-caixa" class="nav-btn" onclick="mudarAbaDirecto('vendas')" style="display:none;"><i class="fa-solid fa-cash-register"></i> Caixa / Balcão</button>
+            <button id="nav-btn-encomendas" class="nav-btn" onclick="mudarAbaDirecto('pedidos')" style="display:none;"><i class="fa-solid fa-box"></i> Encomendas <span id="badge-pedidos" class="badge">0</span></button>
+            <button id="nav-btn-despesas" class="nav-btn" onclick="solicitarAcessoDonoAba('despesas')" style="display:none;"><i class="fa-solid fa-wallet"></i> Despesas</button>
+            <button id="nav-btn-dono" class="nav-btn" onclick="solicitarAcessoDono()" style="display:none;"><i class="fa-solid fa-lock"></i> Painel do Proprietário</button>
+            <button id="nav-btn-sair-modo" class="nav-btn" onclick="sairModoAdministrativo()" style="display:none; background:#ef4444; color:white;"><i class="fa-solid fa-right-from-bracket"></i> Voltar à Loja</button>
+        </nav>
+    </header>
+
+    <main class="container">
+
+        <!-- 1. ABA LOJA ONLINE (CLIENTE) -->
+        <div id="aba-cliente" class="aba-conteudo active">
+            <!-- Autenticação do Cliente -->
+            <div id="box-auth-cliente" class="card-painel card-fade" style="background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 20px;">
+                    <div>
+                        <h3><i class="fa-solid fa-user-lock"></i> Login ou Criar Conta</h3>
+                        <p style="font-size:0.85rem; color:#64748b;">Aceda para encomendar, sugerir produtos e ganhar pontos de fidelidade!</p>
+                    </div>
+                    <img src="logo_mini_mercearia.png" alt="Logo" style="height: 60px; border-radius: 50%;">
+                </div>
+                <div class="grid-auth">
+                    <div class="auth-col">
+                        <h4>Já tenho conta:</h4>
+                        <input type="tel" id="cli-login-tel" placeholder="Telemóvel (Ex: 84...)" class="input-modern">
+                        <input type="password" id="cli-login-pass" placeholder="Palavra-passe" class="input-modern">
+                        <button onclick="fazerLoginCliente()" class="btn-cadastrar-full"><i class="fa-solid fa-right-to-bracket"></i> Entrar na Loja</button>
+                    </div>
+                    <div class="auth-divider"></div>
+                    <div class="auth-col">
+                        <h4>Registar Nova Conta:</h4>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="cli-reg-nome" placeholder="Primeiro Nome" class="input-modern">
+                            <input type="text" id="cli-reg-apelido" placeholder="Apelido" class="input-modern">
+                        </div>
+                        <input type="tel" id="cli-reg-tel" placeholder="Nº de Telemóvel" class="input-modern">
+                        <input type="password" id="cli-reg-pass" placeholder="Definir Palavra-passe" class="input-modern">
+                        <button onclick="registarCliente()" class="btn-secundario-full"><i class="fa-solid fa-user-plus"></i> Criar Conta</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Perfil Logado -->
+            <div id="box-perfil-cliente" class="card-painel card-fade" style="display:none; flex-direction: column; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <i class="fa-solid fa-circle-user fa-xl" style="color: #2563eb;"></i> Olá, <strong id="cli-nome-logado">Cliente</strong>!
+                    </div>
+                    <div>
+                        <span class="badge-pontos"><i class="fa-solid fa-star"></i> <span id="cli-pontos-logado">0 Pts</span></span>
+                        <button onclick="fazerLogoutCliente()" class="btn-secundario" style="padding:4px 8px; font-size:0.8rem; margin-left: 10px;">Sair</button>
+                    </div>
+                </div>
+                <div class="fidelidade-progresso">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 5px;">
+                        <span>Nível Bronze</span>
+                        <span id="txt-progresso-fidelidade">Faltam 50 pts para virar Cliente Prata (5% desconto)!</span>
+                        <span>Nível Prata</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:20px;">
+                <div style="flex:2; min-width:300px;">
+                    <div class="filtros-container">
+                        <input type="text" id="search-bar-cliente" onkeyup="filtrarProdutosCliente()" placeholder="🔍 O que procura hoje? Arroz, Peixe..." class="input-search">
+                        <div class="categoria-tags" id="categoria-tags-cliente"></div>
+                    </div>
+                    <h3>Produtos Disponíveis</h3>
+                    <div id="grid-cliente" class="grid-produtos"></div>
+                </div>
+                <div style="flex:1; min-width:280px;" class="card-painel">
+                    <h3><i class="fa-solid fa-cart-shopping"></i> A Sua Encomenda</h3>
+                    <div id="carrinho-cli-itens" style="margin-top:10px; min-height:80px;"></div>
+                    <hr style="margin:10px 0;">
+                    <h4>Total: <span id="total-cli" style="color:#16a34a; font-size: 1.3rem;">0,00 MT</span></h4>
+                    <button onclick="enviarPedidoOnline()" class="btn-cadastrar" style="width:100%; margin-top:10px; font-size: 1.1rem; padding: 12px;"><i class="fa-solid fa-truck-ramp-box"></i> Enviar Encomenda</button>
+
+                    <h3 style="margin-top:25px;"><i class="fa-solid fa-clock-rotate-left"></i> Minhas Encomendas</h3>
+                    <div id="lista-minhas-encomendas" style="margin-top:10px;"></div>
+
+                    <div id="box-interatividade-cliente" style="display: none; margin-top: 25px; border-top: 2px dashed #e2e8f0; padding-top: 15px;">
+                        <h3><i class="fa-solid fa-lightbulb"></i> Falta algo na nossa loja?</h3>
+                        <p style="font-size:0.8rem; color:#64748b; margin-bottom:8px;">Peça o produto que deseja que tragamos para a mercearia:</p>
+                        <div style="display:flex; gap:5px;">
+                            <input type="text" id="cli-sugestao-prod" placeholder="Ex: Batata frita" class="input-modern" style="margin-bottom:0;">
+                            <button onclick="enviarSugestaoProduto()" class="btn-cadastrar">Sugerir</button>
+                        </div>
+                        <h3 style="margin-top: 20px;"><i class="fa-solid fa-comments"></i> Reclamações ou Elogios</h3>
+                        <textarea id="cli-feedback-msg" placeholder="Escritório de opiniões de melhoria..." class="input-modern" style="min-height: 60px; font-size: 0.85rem; margin-bottom: 5px;"></textarea>
+                        <button onclick="enviarFeedback()" class="btn-secundario" style="width:100%; padding: 6px;">Enviar Contribuição</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. ABA CAIXA / POS (BALCÃO) -->
+        <div id="aba-vendas" class="aba-conteudo">
+            <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                <div style="flex:2; min-width:300px; display: flex; flex-direction: column; gap: 20px;">
+                    <div class="card-painel" style="background: #f0fdf4; border-left: 5px solid #16a34a;">
+                        <h3><i class="fa-solid fa-mobile-screen-button"></i> Registar Operação de Agente (M-Pesa / e-Mola)</h3>
+                        <form onsubmit="registarTransacaoCarteira(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 10px;">
+                            <div>
+                                <label style="font-size:0.8rem;">Serviço:</label>
+                                <select id="cart-tipo" class="input-modern" style="padding: 6px 10px;">
+                                    <option value="M-Pesa">M-Pesa</option>
+                                    <option value="e-Mola">e-Mola</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.8rem;">Operação:</label>
+                                <select id="cart-operacao" class="input-modern" style="padding: 6px 10px;">
+                                    <option value="Depósito">Depósito (Entrada de Cash)</option>
+                                    <option value="Levantamento">Levantamento (Saída de Cash)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.8rem;">Valor (MT):</label>
+                                <input type="number" id="cart-valor" placeholder="Valor" step="0.01" required class="input-modern" style="padding: 6px 10px;">
+                            </div>
+                            <div>
+                                <label style="font-size:0.8rem;">Comissão Agente (MT):</label>
+                                <input type="number" id="cart-taxa" placeholder="Comissão" step="0.01" class="input-modern" style="padding: 6px 10px;">
+                            </div>
+                            <div style="display: flex; align-items: flex-end;">
+                                <button type="submit" class="btn-cadastrar" style="width: 100%; height: 38px; font-size:0.9rem;"><i class="fa-solid fa-save"></i> Guardar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card-painel" style="background: #fffbeb; border-left: 5px solid #f59e0b;">
+                        <h3><i class="fa-solid fa-arrows-turn-to-dots"></i> Abrir & Fracionar Artigos do Stock (Venda Retalho)</h3>
+                        <p id="oleo-avulso-status" style="margin-top: 5px; font-size: 0.9rem; font-weight: bold; color: #b45309;"></p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; align-items: flex-end;">
+                            <div style="flex: 2; min-width: 180px;">
+                                <label style="font-size: 0.8rem;">Artigo Fechado a Abrir:</label>
+                                <select id="oleo-garrafas-disponiveis" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); popularDropdownFracionamento()" class="input-modern" style="margin-bottom:0; padding:6px 10px;"></select>
+                            </div>
+                            <div style="flex: 1; min-width: 100px;">
+                                <label style="font-size: 0.8rem;">Tamanho/Capacidade Total:</label>
+                                <input type="number" id="oleo-litragem-garrafa" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()" placeholder="Ex: 25 ou 2" class="input-modern" style="margin-bottom:0; padding:6px 10px;">
+                            </div>
+                            <button onclick="event.stopPropagation(); confirmarFracionamentoOleo()" class="btn-cadastrar" style="background:#f59e0b; height: 38px; font-size:0.9rem;"><i class="fa-solid fa-bottle-open"></i> Abrir Unidade</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="filtros-container">
+                            <input type="text" id="search-bar" onkeyup="filtrarProdutos()" placeholder="🔍 Pesquisar no Balcão..." class="input-search">
+                            <div class="categoria-tags" id="categoria-tags-balcao"></div>
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <button onclick="venderOleoAvulso()" class="btn-secundario" style="background: #0f172a; color: #ffffff; width: 100%; padding: 12px; font-size: 1rem;"><i class="fa-solid fa-bottle-droplet"></i> Pesar / Vender Artigo Avulso a Retalho</button>
+                        </div>
+                        <div id="grid-produtos" class="grid-produtos"></div>
+                    </div>
+                </div>
+
+                <div style="flex:1; min-width:280px;" class="card-painel">
+                    <h3>🧾 Venda no Balcão</h3>
+                    <div id="lista-carrinho" style="margin-top:10px; max-height:200px; overflow-y:auto;"></div>
+                    <hr style="margin:10px 0;">
+                    <h3>Total: <span id="total-val" style="color:#16a34a; font-size: 1.4rem;">0,00 MT</span></h3>
+                    <div style="margin-top:10px;">
+                        <label>Valor Pago pelo Cliente (MT):</label>
+                        <input type="number" id="valor-pago" oninput="calcularTroco()" placeholder="Ex: 500" class="input-modern">
+                    </div>
+                    <p style="margin-top:5px; font-size: 1.1rem;">Troco: <strong id="troco-val" style="color:#3b82f6;">0,00 MT</strong></p>
+                    <div style="margin-top:10px;">
+                        <label>Forma de Pagamento:</label>
+                        <select id="metodo-pagamento" class="input-modern">
+                            <option value="Numerário">Numerário / Dinheiro</option>
+                            <option value="M-Pesa">M-Pesa</option>
+                            <option value="e-Mola">e-Mola</option>
+                        </select>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <label>Telemóvel do Cliente (Opcional):</label>
+                        <input type="tel" id="venda-cliente-tel" placeholder="Para pontuar" class="input-modern">
+                    </div>
+                    <button onclick="finalizarVendaBalcao()" class="btn-cadastrar" style="width:100%; margin-top:15px; padding: 12px;"><i class="fa-solid fa-check"></i> Concluir Venda</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. ABA GESTÃO DE ENCOMENDAS -->
+        <div id="aba-pedidos" class="aba-conteudo">
+            <h2>📦 Gestão de Encomendas Recebidas</h2>
+            <div id="lista-pedidos-pendentes" style="margin-top:15px;"></div>
+        </div>
+
+        <!-- 4. ABA DESPESAS -->
+        <div id="aba-despesas" class="aba-conteudo">
+            <h2>💸 Contas a Pagar / Despesas da Loja</h2>
+            <div class="card-painel" style="margin-bottom: 20px;">
+                <h3>Registar Nova Despesa</h3>
+                <form id="form-despesas" onsubmit="registarDespesa(event)" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+                    <input type="text" id="desp-desc" placeholder="Descrição (Ex: Sacos, Energia)" required style="flex:2;" class="input-modern">
+                    <input type="number" id="desp-valor" placeholder="Valor (MT)" step="0.01" required style="flex:1;" class="input-modern">
+                    <input type="date" id="desp-data" required style="flex:1;" class="input-modern">
+                    <button type="submit" class="btn-cadastrar" style="flex:1;">Salvar Despesa</button>
+                </form>
+            </div>
+            <h3>Histórico de Despesas do Mês Atual</h3>
+            <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+                <thead>
+                    <tr style="background:#f1f5f9; text-align:left;">
+                        <th style="padding:12px;">Data</th>
+                        <th style="padding:12px;">Descrição</th>
+                        <th style="padding:12px;">Valor</th>
+                        <th style="padding:12px;">Ação</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-despesas-body"></tbody>
+            </table>
+        </div>
+
+        <!-- 5. ABA ÁREA DO PROPRIETÁRIO (DONO) -->
+        <div id="aba-dono" class="aba-conteudo">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap: wrap; gap: 10px;">
+                <h2>🔐 Painel do Proprietário</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="alterarSenhaAtendente()" class="btn-secundario" style="background: #f59e0b;">Alterar Senha do Atendente</button>
+                    <button onclick="alterarSenhaDono()" class="btn-secundario">Alterar Minha Senha (Dono)</button>
+                </div>
+            </div>
+            <div class="card-painel" style="margin-bottom: 20px; border-left: 5px solid #2563eb;">
+                <h3><i class="fa-solid fa-chart-line"></i> Resumo de Artigos Vendidos Hoje</h3>
+                <div id="lista-produtos-vendidos-hoje"></div>
+            </div>
+            <div class="card-painel" style="margin-bottom: 20px; background: #f0fdf4; border-left: 5px solid #16a34a;">
+                <h3><i class="fa-solid fa-receipt"></i> Relatório de Fluxo M-Pesa & e-Mola</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                    <div class="col-fin" style="border-left: 3px solid #16a34a; background: #ffffff;">
+                        <small>Total de Depósitos</small>
+                        <h4 id="cart-resumo-depositos">0,00 MT</h4>
+                    </div>
+                    <div class="col-fin" style="border-left: 3px solid #2563eb; background: #ffffff;">
+                        <small>Total de Levantamentos</small>
+                        <h4 id="cart-resumo-levantamentos">0,00 MT</h4>
+                    </div>
+                    <div class="col-fin" style="border-left: 3px solid #f59e0b; background: #ffffff;">
+                        <small>Total de Comissões ganhas</small>
+                        <h4 id="cart-resumo-comissoes">0,00 MT</h4>
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <thead>
+                        <tr style="background: #e2e8f0; text-align: left;">
+                            <th style="padding: 10px;">Data/Hora</th>
+                            <th style="padding: 10px;">Serviço</th>
+                            <th style="padding: 10px;">Operação</th>
+                            <th style="padding: 10px;">Valor</th>
+                            <th style="padding: 10px;">Ganho Comissão</th>
+                            <th style="padding: 10px;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-carteiras-body"></tbody>
+                </table>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div class="card-painel">
+                    <h3><i class="fa-solid fa-lightbulb" style="color: #f59e0b;"></i> Produtos Solicitados</h3>
+                    <div id="lista-sugestoes-dono" style="margin-top:10px; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+                <div class="card-painel">
+                    <h3><i class="fa-solid fa-comments" style="color: #2563eb;"></i> Reclamações</h3>
+                    <div id="lista-feedbacks-dono" style="margin-top:10px; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+            </div>
+            <div class="card-painel" style="margin-bottom: 20px;">
+                <h3>📊 Desempenho Financeiro (Mês Atual)</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px;">
+                    <div class="col-fin" style="border-left:4px solid #3b82f6;"><small>Faturação Total</small><h2 id="fin-faturacao">0,00 MT</h2></div>
+                    <div class="col-fin" style="border-left:4px solid #ef4444;"><small>Total de Despesas</small><h2 id="fin-despesas" style="color:#ef4444;">0,00 MT</h2></div>
+                    <div class="col-fin" style="border-left:4px solid #16a34a;"><small>Lucro Líquido Real</small><h2 id="fin-lucro">0,00 MT</h2></div>
+                    <div class="col-fin" style="border-left:4px solid #f59e0b;"><small>Dívidas Pendentes</small><h2 id="fin-dividas" style="color:#d97706;">0,00 MT</h2></div>
+                </div>
+                <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+                    <button onclick="arquivarEReiniciarMes()" class="btn-cadastrar" style="background:#8b5cf6;"><i class="fa-solid fa-box-archive"></i> Arquivar & Reiniciar Mês</button>
+                </div>
+            </div>
+            <div class="card-painel" style="margin-bottom: 20px;">
+                <h3>🗄️ Histórico Arquivado</h3>
+                <div id="lista-meses-arquivados" style="margin-top:10px;"></div>
+            </div>
+            <div class="card-painel" style="margin-bottom:20px;">
+                <h3>📑 Caderno de Dívidas (Fiado)</h3>
+                <div id="caixa-alertas-divida" style="display:none; background:#fef2f2; color:#991b1b; padding:10px; border-radius:6px;">⚠️ Dívidas vencidas!</div>
+                <form onsubmit="registarDivida(event)" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
+                    <input type="text" id="div-nome" placeholder="Nome" required style="flex:2;" class="input-modern">
+                    <input type="tel" id="div-tel" placeholder="Telemóvel" required style="flex:1;" class="input-modern">
+                    <input type="number" id="div-valor" placeholder="Valor" step="0.01" required style="flex:1;" class="input-modern">
+                    <input type="date" id="div-data" required style="flex:1;" class="input-modern">
+                    <button type="submit" class="btn-cadastrar" style="flex:1;">Registar</button>
+                </form>
+                <table style="width:100%; border-collapse:collapse; margin-top:15px;">
+                    <thead><tr style="background:#f1f5f9; text-align:left;"><th>Nome</th><th>Telemóvel</th><th>Valor</th><th>Vencimento</th><th>Estado</th><th>Ação</th></tr></thead>
+                    <tbody id="tabela-dividas-body"></tbody>
+                </table>
+            </div>
+            <div class="card-painel">
+                <h3>📦 Cadastro e Inventário de Stock</h3>
+                <form onsubmit="cadastrarProduto(event)" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; margin-top:10px; margin-bottom:15px;">
+                    <input type="text" id="p-nome" placeholder="Nome" required class="input-modern">
+                    <select id="p-tipo" class="input-modern"><option value="UNI">Unidade</option><option value="KG">KG</option><option value="L">Litros</option></select>
+                    <select id="p-categoria" class="input-modern"><option value="Básicos">Básicos</option><option value="Frescos">Frescos</option><option value="Bebidas">Bebidas</option><option value="Snacks">Snacks</option><option value="Limpeza">Limpeza</option></select>
+                    <input type="number" id="p-custo" placeholder="Custo" step="0.01" required class="input-modern">
+                    <input type="number" id="p-venda" placeholder="Venda" step="0.01" required class="input-modern">
+                    <input type="number" id="p-qtd" placeholder="Stock" step="0.001" required class="input-modern">
+                    <input type="text" id="p-imagem" placeholder="Link Imagem URL" class="input-modern">
+                    <input type="number" id="p-qtd-atacado" placeholder="Qtd Atacado" class="input-modern">
+                    <input type="number" id="p-desc-atacado" placeholder="Desconto %" class="input-modern">
+                    <button type="submit" class="btn-cadastrar"><i class="fa-solid fa-plus"></i> Cadastrar</button>
+                </form>
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead><tr style="background:#f1f5f9; text-align:left;"><th>Imagem</th><th>Produto</th><th>Categoria</th><th>Custo</th><th>Venda</th><th>Atacado</th><th>Stock</th><th>Ações</th></tr></thead>
+                    <tbody id="tabela-stock-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
