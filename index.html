@@ -9,13 +9,10 @@
 </head>
 <body>
 
-    <!-- CABEÇALHO TOTALMENTE LIMPO PARA O CLIENTE (SEM ENGRENAGEM) -->
+    <!-- CABEÇALHO E NAVEGAÇÃO UNIFICADA COM BOTÕES DINÂMICOS -->
     <header>
-        <div class="logo-area">
-            <div class="logo-wrapper">
-                <img src="logo_mini_mercearia.png" alt="Logo Mercearia" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="logo-fallback" style="display: none;"><i class="fa-solid fa-shop"></i></div>
-            </div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img src="logo_mini_mercearia.png" alt="Logo Mercearia" style="height: 50px; width: auto; border-radius: 8px;">
             <h1>Mini Mercearia</h1>
         </div>
         <nav class="nav-menu">
@@ -39,6 +36,7 @@
                         <h3><i class="fa-solid fa-user-lock"></i> Login ou Criar Conta</h3>
                         <p style="font-size:0.85rem; color:#64748b;">Aceda para encomendar, sugerir produtos e ganhar pontos de fidelidade!</p>
                     </div>
+                    <img src="logo_mini_mercearia.png" alt="Logo" style="height: 60px; border-radius: 50%;">
                 </div>
                 <div class="grid-auth">
                     <div class="auth-col">
@@ -347,9 +345,11 @@
 
     </main>
 
-    <!-- O PÍXEL INVISÍVEL AJUSTADO (Com folga para não selecionar texto no PC) -->
-    <div id="pixel-secreto" onclick="contarCliquesSecretos()" style="position: fixed; bottom: 15px; right: 15px; width: 35px; height: 35px; background: transparent; z-index: 9999; cursor: default; user-select: none; -webkit-user-select: none;"></div>
+    <!-- Ponto de acesso oculto: 3 cliques rápidos aqui abrem o login administrativo. Invisível para o cliente. -->
+    <div id="pixel-secreto" onclick="contarCliquesSecretos()" onmousedown="event.preventDefault()" style="position: fixed; bottom: 0; right: 0; width: 40px; height: 40px; background: transparent; z-index: 9999; cursor: default; -webkit-user-select: none; -moz-user-select: none; user-select: none;"></div>
 
+    <!-- Biblioteca do Supabase (banco de dados online) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </body>
 </html>
