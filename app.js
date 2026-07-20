@@ -3,10 +3,13 @@
 // ==========================================
 // 1. Crie uma conta grátis em https://supabase.com
 // 2. Crie um novo projeto e execute o SQL do arquivo "supabase_setup.sql" (fornecido junto)
-// 3. Vá em "Project Settings" > "API" e copie a "Project URL" e a chave "anon public"
+// 3. Vá em "Project Settings" > "API":
+//    - Copie a "Project URL"
+//    - Na aba "API Keys", copie a "Publishable key" (começa com sb_publishable_...)
+//      Em projetos mais antigos essa chave pode aparecer como "anon public" na aba "Legacy API Keys" — serve igual.
 // 4. Cole os dois valores abaixo, entre as aspas:
-const SUPABASE_URL = "https://diczouvvurinlyivfvjz.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_lRty3U4F7hZztpg9MziIYw_hJOUoHP7";
+const SUPABASE_URL = "COLE_AQUI_A_SUA_PROJECT_URL";
+const SUPABASE_ANON_KEY = "COLE_AQUI_A_SUA_PUBLISHABLE_OU_ANON_KEY";
 
 let supabaseClient = null;
 let nuvemConfigurada = false;
@@ -97,23 +100,32 @@ async function carregarDadosDaNuvem() {
 }
 
 // Envia todos os dados partilhados para a nuvem
+let suprimirEcoAte = 0; // enquanto Date.now() for menor que isto, ignoramos os "ecos" das nossas próprias gravações
+
 async function salvarDadosNaNuvem() {
     if (!nuvemConfigurada) return;
+    suprimirEcoAte = Date.now() + 4000; // esta gravação pode alterar várias linhas de uma vez; ignoramos os ecos por alguns segundos
     const mapa = mapaDadosNuvem();
     const linhas = CHAVES_DADOS_NUVEM.map(chave => ({ chave, valor: mapa[chave]() }));
     const { error } = await supabaseClient.from("dados_app").upsert(linhas, { onConflict: "chave" });
     if (error) console.error("Erro ao guardar dados na nuvem:", error);
 }
 
-// Liga-se ao Supabase Realtime: quando QUALQUER dispositivo alterar dados,
-// todos os outros dispositivos abertos recebem a atualização automaticamente.
+// Liga-se ao Supabase Realtime: quando OUTRO dispositivo alterar dados,
+// este dispositivo recebe a atualização automaticamente (sem recarregar a página).
 function ativarSincronizacaoTempoReal() {
     if (!nuvemConfigurada) return;
+    let temporizadorRerender = null;
     supabaseClient
         .channel("dados_app_mudancas")
-        .on("postgres_changes", { event: "*", schema: "public", table: "dados_app" }, async () => {
-            await carregarDadosDaNuvem();
-            reRenderizarEcraAtual();
+        .on("postgres_changes", { event: "*", schema: "public", table: "dados_app" }, () => {
+            if (Date.now() < suprimirEcoAte) return; // é eco da nossa própria gravação — já temos os dados atuais, não precisamos redesenhar
+            // Agrupa vários avisos seguidos (ex: uma gravação com várias "chaves") num único redesenho, para evitar piscar o ecrã
+            clearTimeout(temporizadorRerender);
+            temporizadorRerender = setTimeout(async () => {
+                await carregarDadosDaNuvem();
+                reRenderizarEcraAtual();
+            }, 400);
         })
         .subscribe();
 }
@@ -1136,6 +1148,7 @@ function carregarTabelaStock() {
                 <td style="padding:10px;">
                     <strong id="p-qtd-view-${p.id}">${p.qtd} ${p.tipo}</strong>
                     <button onclick="ajustarStock(${p.id})" style="background:#f59e0b; color:white; border:none; padding:2px 6px; border-radius:4px; margin-left:5px; cursor:pointer; font-size:0.75rem;">Ajustar</button>
+                    <button onclick="editarUnidade(${p.id})" title="Mudar a unidade de venda (Unidade / KG / Litros)" style="background:#3b82f6; color:white; border:none; padding:2px 6px; border-radius:4px; margin-left:3px; cursor:pointer; font-size:0.75rem;"><i class="fa-solid fa-pen"></i></button>
                 </td>
                 <td style="padding:10px; display:flex; gap:5px;">
                     <button onclick="declararDanificado(${p.id})" style="background:#f59e0b; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;"><i class="fa-solid fa-triangle-exclamation"></i> Danificado</button>
@@ -1158,6 +1171,28 @@ function editarPreco(id) {
         carregarProdutosBalcao();
         alert("Preço actualizado com sucesso!");
     }
+}
+
+function editarUnidade(id) {
+    const p = produtos.find(item => item.id === id);
+    if (!p) return;
+
+    const escolha = prompt(
+        `Produto: [${p.nome}]\nUnidade atual: ${p.tipo}\n\nComo este produto é vendido? Digite uma opção:\n1 = Unidade (ex: garrafa, saco, pacote inteiro)\n2 = KG (vendido a peso, ao quilograma)\n3 = Litros (vendido a granel, ao litro)`,
+        p.tipo === "UNI" ? "1" : (p.tipo === "KG" ? "2" : "3")
+    );
+    if (escolha === null) return;
+
+    const mapaEscolha = { "1": "UNI", "2": "KG", "3": "L" };
+    const novoTipo = mapaEscolha[escolha.trim()];
+    if (!novoTipo) return alert("Opção inválida. Digite 1, 2 ou 3.");
+
+    p.tipo = novoTipo;
+    salvarDados();
+    carregarTabelaStock();
+    carregarLojaCliente();
+    carregarProdutosBalcao();
+    alert(`Unidade de [${p.nome}] atualizada para ${novoTipo === "UNI" ? "Unidade" : (novoTipo === "KG" ? "KG" : "Litros")}.`);
 }
 
 function ajustarStock(id) {
@@ -1525,6 +1560,12 @@ window.addEventListener('DOMContentLoaded', async () => {
         alert("Atenção: o banco de dados online ainda não foi configurado no ficheiro app.js. Os dados não vão sincronizar entre aparelhos até isso ser feito.");
     }
     await carregarDadosDaNuvem();
+
+    // ===== RESET TEMPORÁRIO DA SENHA DO DONO — REMOVER DEPOIS DE USAR =====
+    senhaDono = "1234";
+    await salvarDadosNaNuvem();
+    alert("A senha do Dono foi reposta para 1234. Entre com essa senha e depois: 1) mude a senha em Painel do Dono > Alterar Senha, e 2) volte a publicar o app.js normal (sem este bloco de reset), para que a senha não volte a ser reposta a cada visita.");
+    // ===== FIM DO RESET TEMPORÁRIO =====
 
     if (clienteLogadoTel && contasClientes[clienteLogadoTel]) {
         entrarSessaoCliente(clienteLogadoTel);
